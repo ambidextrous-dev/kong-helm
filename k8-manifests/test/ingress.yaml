@@ -1,0 +1,70 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kong-ingress
+  namespace: kong
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    cert-manager.io/cluster-issuer: godaddy
+    cert-manager.io/acme-challenge-type: http01
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "kongmanager-test.company.com"
+    - "kongadmin-test.company.com"
+    - "kongapi-test.company.com"
+    - "kongdevportal-test.company.com"
+    - "kongdevportalapi-test.company.com"
+    secretName: kong-tls
+  rules:
+  - host: kongapi-test.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: kong-dp-kong-proxy
+            port: 
+              number: 8000
+  - host: kongadmin-test.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kong-cp-kong-admin
+            port: 
+              number: 8001
+  - host: kongmanager-test.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kong-cp-kong-manager
+            port: 
+              number: 8002
+  - host: kongdevportal-test.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kong-cp-kong-portal
+            port: 
+              number: 8003
+  - host: kongdevportalapi-test.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kong-cp-kong-portalapi
+            port: 
+              number: 8004

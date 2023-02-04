@@ -1,0 +1,75 @@
+image:
+  repository: kong/kong-gateway
+  tag: "3.0"
+  pullPolicy: Always
+
+env:
+  role: data_plane
+  proxy_listen: 0.0.0.0:8050
+  database: "off"
+  cluster_cert: /etc/secrets/kong-cluster-cert/tls.crt
+  cluster_cert_key: /etc/secrets/kong-cluster-cert/tls.key
+  lua_ssl_trusted_certificate: /etc/secrets/kong-cluster-cert/tls.crt
+  cluster_control_plane: kong-cp-kong-cluster.kong.svc.cluster.local:8005
+  cluster_telemetry_endpoint: kong-cp-kong-clustertelemetry.kong.svc.cluster.local:8006
+
+secretVolumes:
+  - kong-cluster-cert
+
+ingressController:
+  enabled: false
+
+admin:
+  enabled: false
+  http:
+    enabled: true
+
+proxy:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    konghq.com/protocol: "https"
+
+  http:
+    enabled: true
+    servicePort: 8000
+    containerPort: 8000
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 8493
+    containerPort: 8493
+    parameters:
+      - http2
+  stream: []
+
+portal:
+  enabled: true
+
+portalapi:
+  enabled: true
+
+manager:
+  enabled: true
+
+enterprise:
+  enabled: true
+  license_secret: kong-enterprise-license
+  vitals:
+    enabled: true
+  portal:
+    enabled: true
+  rbac:
+    enabled: false
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80

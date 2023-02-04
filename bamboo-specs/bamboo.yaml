@@ -1,0 +1,47 @@
+---
+version: 2
+deployment:
+  name: kong-deployment-plan
+  source-plan: KONG
+release-naming:
+  next-version-name: 1.0.0
+
+environments:
+- test
+
+test:
+  tasks:
+  - checkout:
+      repository: kong-helm
+      path: kong-helm
+      force-clean-build: 'true'
+      description: Checkout Source Code
+  - script:
+      interpreter: SHELL
+      scripts:
+      - chmod -R +x .
+      working-dir: kong-helm
+      description: Add executable permissions for scripts
+  - script:
+      interpreter: SHELL
+      file: deploy.sh
+      working-dir: kong-helm/scripts
+---
+version: 2
+deployment:
+  name: kong-deployment-plan
+deployment-permissions:
+- users:
+  - user1
+  permissions:
+  - view
+  - edit
+environment-permissions:
+- test:
+  - users:
+    - user1
+    permissions:
+    - view
+    - edit
+    - deploy
+...

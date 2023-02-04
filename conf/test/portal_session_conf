@@ -1,0 +1,10 @@
+{
+    "cookie_name": "portal_session",
+    "cookie_samesite": "off",
+    "secret": "HardToGuessPasswordGoesHere",
+    "cookie_secure": true,
+    "cookie_lifetime": 3600,
+    "cookie_renew": 600,
+    "storage": "kong",
+    "cookie_domain": "company.com"
+}

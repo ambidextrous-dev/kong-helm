@@ -1,0 +1,235 @@
+---
+image:
+  repository: kong/kong-gateway
+  tag: "3.0"
+  pullPolicy: Always
+
+deployment:
+  kong:
+    enabled: true
+
+env:
+  database: "postgres"
+  role: control_plane
+  cluster_cert: /etc/secrets/kong-cluster-cert/tls.crt
+  cluster_cert_key: /etc/secrets/kong-cluster-cert/tls.key
+  nginx_worker_processes: "2"
+  log_level: "debug"
+  admin_access_log: /dev/stdout
+  admin_gui_access_log: /dev/stdout
+  portal_api_access_log: /dev/stdout
+  proxy_error_log: /dev/stderr
+  admin_error_log: /dev/stderr
+  admin_gui_error_log: /dev/stderr
+  portal_api_error_log: /dev/stderr
+  prefix: /usr/local/kong
+  
+  pg_host: "POSTGRES-HOST"
+  pg_user:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-db-secrets
+        key: user
+  pg_database: kongconfig
+  pg_password:
+    valueFrom:
+      secretKeyRef:
+        name: postgres-db-secrets
+        key: password
+  password:
+    valueFrom:
+      secretKeyRef:
+        name: kong-enterprise-superuser-password
+        key: password
+  
+  admin_api_uri: "https://kongadmin-test.company.com"
+  admin_gui_url: "https://kongmanager-test.company.com"
+  proxy_url: "https://kongapi-test.company.com"
+  portal_api_url: "https://kongdevportalapi-test.company.com"
+  portal_gui_host: "kongdevportal-test.company.com"
+
+  portal_gui_protocol: "https"
+  portal_gui_use_subdomains: false 
+  portal_auth: "basic-auth"
+  portal_session_conf:
+    valueFrom:
+      secretKeyRef:
+        name: kong-session-config
+        key: portal_session_conf
+  portal_cors_origins: "*"
+  smtp_starttls: on
+
+admin:
+  enabled: true
+  type: NodePort
+  annotations:
+    konghq.com/protocol: "https"
+  http:
+    enabled: true
+    servicePort: 8001
+    containerPort: 8001
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 8494
+    containerPort: 8494
+    parameters: []
+
+status:
+  enabled: true
+  http:
+    enabled: true
+    containerPort: 8100
+    parameters: []
+  tls:
+    enabled: true
+    containerPort: 8543
+    parameters: []
+
+proxy:
+  enabled: false
+  type: LoadBalancer
+  annotations:
+    konghq.com/protocol: "https"
+  http:
+    enabled: false
+    servicePort: 8000
+    containerPort: 8000
+    parameters: []
+  tls:
+    enabled: false
+    servicePort: 8493
+    containerPort: 8493
+    parameters:
+      - http2
+  stream: []
+
+ingressController:
+  enabled: false
+
+# Postgres sub-chart parameters
+postgresql:
+  enabled: false # Turned off subchart to use external postgres
+  postgresqlUsername: kong
+  postgresqlDatabase: kong
+  postgresqlPassword: kong
+  service:
+    port: 5432
+
+# Miscellaneous parameters
+waitImage:
+  repository: bash
+  tag: 5
+  pullPolicy: IfNotPresent
+
+readinessProbe:
+  httpGet:
+    path: "/status"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: "/status"
+    port: status
+    scheme: HTTP
+  initialDelaySeconds: 5
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "/bin/sleep 15 && kong quit"]
+
+cluster:
+  enabled: true
+  tls:
+    enabled: true
+    servicePort: 8005
+    containerPort: 8005
+
+clustertelemetry:
+  enabled: true
+  tls:
+    enabled: true
+    servicePort: 8006
+    containerPort: 8006
+secretVolumes:
+  - kong-cluster-cert
+
+enterprise:
+  enabled: true
+  license_secret: kong-enterprise-license
+  vitals:
+    enabled: true
+  portal:
+    enabled: true
+  rbac:
+    enabled: true
+    admin_gui_auth: basic-auth
+    # If RBAC is enabled, this Secret must contain an admin_gui_session_conf key
+    # The key value must be a secret configuration, following the example at
+    # https://docs.konghq.com/enterprise/latest/kong-manager/authentication/sessions
+    session_conf_secret: kong-session-config
+    # If admin_gui_auth is not set to basic-auth, provide a secret name which
+    # has an admin_gui_auth_conf key containing the plugin config JSON
+    # admin_gui_auth_conf_secret: admin-gui-auth-conf
+
+manager:
+  enabled: true
+  type: NodePort
+  annotations:
+    konghq.com/protocol: "https"
+  http:
+    enabled: true
+    servicePort: 8002
+    containerPort: 8002
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 8495
+    containerPort: 8495
+    parameters:
+      - http2
+
+portal:
+  enabled: true
+  type: NodePort
+  annotations:
+    konghq.com/protocol: "https"
+  http:
+    enabled: true
+    servicePort: 8003
+    containerPort: 8003
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 8496
+    containerPort: 8496
+    parameters:
+      - http2
+
+portalapi:
+  enabled: true
+  type: NodePort
+  annotations:
+    konghq.com/protocol: "https"
+  http:
+    enabled: true
+    servicePort: 8004
+    containerPort: 8004
+    parameters: []
+  tls:
+    enabled: true
+    servicePort: 8497
+    containerPort: 8497
+    parameters:
+      - http2
