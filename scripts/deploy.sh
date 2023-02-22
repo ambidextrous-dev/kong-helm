@@ -10,7 +10,7 @@ kubectl config use-context $bamboo_deploy_environment
 kubectl create namespace $namespace --dry-run -o yaml | kubectl apply -f -
 
 #create self-signed certs for mTLS
-openssl req -new -x509 -nodes -newkey rsa:4096 -keyout cluster.key -out cluster.crt -days 1095 -subj "/CN=kong_clustering"
+openssl req -new -x509 -nodes -newkey ec:<(openssl ecparam -name secp384r1) -keyout cluster.key -out cluster.crt -days 1095 -subj "/CN=kong_clustering"
 
 #create required secrets
 kubectl create secret tls kong-cluster-cert --cert=cluster.crt --key=cluster.key -n $namespace --dry-run -o yaml | kubectl apply -f -
